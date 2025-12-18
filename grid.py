@@ -1,42 +1,35 @@
-import random
-import matplotlib.pyplot as plt
 import numpy as np
 
-
 class GridMap:
-    def __init__(self, n, obstacle_rate=0.25):
-        self.n = n
-        self.obstacle_rate = obstacle_rate
+    """
+    0 = boş, 1 = engel
+    start = (0,0), goal = (n-1,n-1)
+    """
+    def __init__(self, n: int, obstacle_ratio: float, seed: int = 42):
+        self.n = int(n)
+        self.obstacle_ratio = float(obstacle_ratio)
+        self.seed = int(seed)
         self.grid = None
         self.start = (0, 0)
-        self.goal = (n - 1, n - 1)
+        self.goal = (self.n - 1, self.n - 1)
 
     def generate(self):
-        """n×n grid üret, obstacle_rate’e göre engel ekle."""
-        self.grid = np.zeros((self.n, self.n), dtype=int)
+        rng = np.random.default_rng(self.seed)
+        n = self.n
 
-        for i in range(self.n):
-            for j in range(self.n):
-                if random.random() < self.obstacle_rate:
-                    self.grid[i][j] = 1  # 1 = obstacle
+        self.grid = (rng.random((n, n)) < self.obstacle_ratio).astype(int)
 
-        # Start ve goal daima açık olsun
+        # start/goal açık olsun
+        self.start = (0, 0)
+        self.goal = (n - 1, n - 1)
         self.grid[self.start] = 0
         self.grid[self.goal] = 0
 
-    def show(self):
-        """Gridi matplotlib ile basitçe gösterir."""
-        if self.grid is None:
-            raise ValueError("Grid map not generated yet.")
+        # start/goal çevresini de aç (pratikte yol bulmayı kolaylaştırır)
+        for (r, c) in [self.start, self.goal]:
+            for dr, dc in [(1,0), (-1,0), (0,1), (0,-1)]:
+                rr, cc = r + dr, c + dc
+                if 0 <= rr < n and 0 <= cc < n:
+                    self.grid[rr, cc] = 0
 
-        plt.figure(figsize=(6, 6))
-        plt.imshow(self.grid, cmap="binary")
-        plt.title(f"Grid Map ({self.n}x{self.n})")
-
-        # start = yeşil, goal = kırmızı
-        plt.scatter(self.start[1], self.start[0], color='green', s=80, label='Start')
-        plt.scatter(self.goal[1], self.goal[0], color='red', s=80, label='Goal')
-
-        plt.legend()
-        plt.gca().invert_yaxis()
-        plt.show()
+        return self.grid
